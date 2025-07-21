@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tic Tac Toe Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #f8ffae 0%, #43c6ac 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      margin-top: 40px;
+      color: #222;
+      letter-spacing: 2px;
+      text-shadow: 1px 2px 8px #fff8;
+    }
+    #game {
+      display: grid;
+      grid-template-columns: repeat(3, 90px);
+      grid-template-rows: repeat(3, 90px);
+      gap: 14px;
+      margin: 30px 0;
+      background: #fff6;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px #0002;
+      padding: 18px;
+    }
+    .cell {
+      width: 90px;
+      height: 90px;
+      background: #fff;
+      border: 3px solid #43c6ac;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
+      box-shadow: 0 2px 8px #43c6ac22;
+      position: relative;
+      user-select: none;
+    }
+    .cell:hover {
+      background: #e0f7fa;
+      box-shadow: 0 4px 16px #43c6ac44;
+      border-color: #f857a6;
+    }
+    .cell svg {
+      width: 60px;
+      height: 60px;
+      display: block;
+    }
+    .cell.winner {
+      background: #f857a6 !important;
+      border-color: #f857a6 !important;
+      animation: winnerPulse 0.7s infinite alternate;
+    }
+    @keyframes winnerPulse {
+      0% { box-shadow: 0 0 0 0 #f857a666; }
+      100% { box-shadow: 0 0 16px 8px #f857a633; }
+    }
+    #status {
+      font-size: 1.3rem;
+      margin-bottom: 20px;
+      min-height: 1.5em;
+      color: #222;
+      text-shadow: 0 1px 4px #fff8;
+      font-weight: 600;
+    }
+    #restartBtn {
+      padding: 12px 36px;
+      font-size: 1.1rem;
+      background: linear-gradient(90deg, #43c6ac, #f857a6);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 30px;
+      transition: background 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px #43c6ac33;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    #restartBtn:hover {
+      background: linear-gradient(90deg, #f857a6, #43c6ac);
+      box-shadow: 0 4px 16px #f857a644;
+    }
+    footer {
+      margin-top: auto;
+      padding: 20px 0;
+      color: #888;
+      font-size: 0.9rem;
+      text-shadow: 0 1px 4px #fff8;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tic Tac Toe</h1>
+  <div id="status"></div>
+  <div id="game"></div>
+  <button id="restartBtn">Restart Game</button>
+  <footer>
+    &copy; 2024 Tic Tac Toe App
+  </footer>
+  <script>
+    const gameContainer = document.getElementById('game');
+    const statusDiv = document.getElementById('status');
+    const restartBtn = document.getElementById('restartBtn');
+
+    let board;
+    let currentPlayer;
+    let gameActive;
+
+    function initializeGame() {
+      board = [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', '']
+      ];
+      currentPlayer = 'X';
+      gameActive = true;
+      renderBoard();
+      setStatus(`Player ${currentPlayer}'s turn`);
+    }
+
+    function renderBoard(highlight = []) {
+      gameContainer.innerHTML = '';
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+          // Highlight winning cells
+          if (highlight.some(([r, c]) => r === row && c === col)) {
+            cell.classList.add('winner');
+          }
+          // Use SVG for X and O
+          if (board[row][col] === 'X') {
+            cell.innerHTML = `<svg viewBox="0 0 60 60"><line x1="10" y1="10" x2="50" y2="50" stroke="#f857a6" stroke-width="7" stroke-linecap="round"/><line x1="50" y1="10" x2="10" y2="50" stroke="#f857a6" stroke-width="7" stroke-linecap="round"/></svg>`;
+          } else if (board[row][col] === 'O') {
+            cell.innerHTML = `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="20" stroke="#43c6ac" stroke-width="7" fill="none"/></svg>`;
+          } else {
+            cell.innerHTML = '';
+          }
+          cell.addEventListener('click', handleCellClick);
+          gameContainer.appendChild(cell);
+        }
+      }
+    }
+
+    function handleCellClick(e) {
+      if (!gameActive) return;
+      const row = parseInt(e.target.dataset.row);
+      const col = parseInt(e.target.dataset.col);
+      if (board[row][col] !== '') return;
+
+      board[row][col] = currentPlayer;
+      // Check for win and highlight
+      const winInfo = checkWin(currentPlayer);
+      if (winInfo) {
+        renderBoard(winInfo);
+        setStatus(`Player ${currentPlayer} wins! 🎉`);
+        gameActive = false;
+        return;
+      }
+      if (checkDraw()) {
+        renderBoard();
+        setStatus("It's a draw! 🤝");
+        gameActive = false;
+        return;
+      }
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      renderBoard();
+      setStatus(`Player ${currentPlayer}'s turn`);
+    }
+
+    function setStatus(message) {
+      statusDiv.textContent = message;
+    }
+
+    function checkWin(player) {
+      // Returns array of winning cells if win, else false
+      // Rows
+      for (let i = 0; i < 3; i++) {
+        if (board[i][0] === player && board[i][1] === player && board[i][2] === player)
+          return [[i,0],[i,1],[i,2]];
+      }
+      // Columns
+      for (let i = 0; i < 3; i++) {
+        if (board[0][i] === player && board[1][i] === player && board[2][i] === player)
+          return [[0,i],[1,i],[2,i]];
+      }
+      // Diagonals
+      if (board[0][0] === player && board[1][1] === player && board[2][2] === player)
+        return [[0,0],[1,1],[2,2]];
+      if (board[0][2] === player && board[1][1] === player && board[2][0] === player)
+        return [[0,2],[1,1],[2,0]];
+      return false;
+    }
+
+    function checkDraw() {
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          if (board[row][col] === '') return false;
+        }
+      }
+      return true;
+    }
+
+    restartBtn.addEventListener('click', initializeGame);
+
+    // Start the game when the page loads
+    initializeGame();
+  </script>
+</body>
+</html>
